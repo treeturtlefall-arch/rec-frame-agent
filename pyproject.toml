@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rec-frame-agent"
+version = "0.3.1"
+description = "AI-agent friendly REC viewfinder frame overlay: a thin translation layer over rec-frame-app's engine"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = ["Pillow==12.1.0"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+rec-frame-agent = "rec_frame_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+rec_frame_agent = ["data/*.json", "data/presets/*.json", "fonts/*.ttf", "fonts/*.txt", "fonts/*.md"]
+"rec_frame_agent.engine" = [
+    "*.py",
+    "fonts/*.ttf",
+    "fonts/*.txt",
+    "fonts/*.md",
+    "assets/dots/*.png",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "color": "white",
+  "show_frame": true,
+  "show_battery": true,
+  "battery_bars": 3,
+  "show_rec": true,
+  "rec_label": "REC",
+  "show_cross": false,
+  "show_timecode": true,
+  "font_key": "Audiowide(ワイドHUD)",
+  "retro_effect": 0,
+  "timecode_mode": "processed_at"
+}

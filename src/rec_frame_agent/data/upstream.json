@@ -1,0 +1,6 @@
+{
+  "repo": "treeturtlefall-arch/rec-frame-app",
+  "url": "https://github.com/treeturtlefall-arch/rec-frame-app",
+  "license": "MIT",
+  "snapshot": "local fork snapshot 2026-11-02 (upstream v0.3.0 era); exact upstream commit was not recorded in the fork, so engine files are pinned by the sha256 manifest in engine_hashes.json"
+}
