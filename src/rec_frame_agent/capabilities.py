@@ -99,6 +99,7 @@ def human_summary(caps: dict) -> str:
         "- ON/OFF: " + "、".join(t["label"] for t in axes["toggles"]["items"]),
         f"- 電池バー 0-4 本、ドット素材 {len(axes['dot_style']['choices'])} 種",
         "- エフェクト: off / oled / 2000s、レトロ劣化 0-6",
+        "- 座布団（半透明ボックス）: 0.0-1.0（文字の白飛び・黒飛び防止に自動反転）",
         "- タイムスタンプ: 処理した時刻 / 撮影日時 / 固定文 / なし",
         "",
         "気に入った組み合わせはプリセットとして保存でき、お気に入りにできます。",

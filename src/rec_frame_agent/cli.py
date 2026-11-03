@@ -62,14 +62,16 @@ def cmd_apply(args) -> int:
             output=args.output,
             timecode=args.timecode,
             at_text=args.at,
+            bg_opacity=args.bg_opacity,
             dry_run=args.dry_run,
             overwrite=args.overwrite,
         )
     except AgentError as e:
         return _fail(e, as_json)
+    bg_info = f" / 座布団: {int(round(report['bg_box_opacity'] * 100))}%" if report.get("bg_box_opacity", 0) > 0 else ""
     human = (
         f"{'（dry-run）' if report.get('dry_run') else ''}合成しました: {report['output']}\n"
-        f"プリセット: {report['preset_resolved']} / タイムスタンプ: "
+        f"プリセット: {report['preset_resolved']}{bg_info} / タイムスタンプ: "
         f"{report['timecode']['mode']}"
         + (f"（{report['timecode']['text']}）" if report["timecode"].get("text") else "")
     )
@@ -86,13 +88,15 @@ def cmd_batch(args) -> int:
             preset_name=args.preset,
             timecode=args.timecode,
             at_text=args.at,
+            bg_opacity=args.bg_opacity,
             timecode_per_file=args.timecode_per_file,
         )
     except AgentError as e:
         return _fail(e, as_json)
+    bg_info = f" / 座布団: {int(round(report['bg_box_opacity'] * 100))}%" if report.get("bg_box_opacity", 0) > 0 else ""
     human = (
         f"一括処理: 成功 {report['success']} / 失敗 {report['failed']} / "
-        f"スキップ {report['skipped']}（プリセット: {report['preset_resolved']}）"
+        f"スキップ {report['skipped']}（プリセット: {report['preset_resolved']}{bg_info}）"
     )
     _emit(report, as_json, human)
     return code
@@ -316,6 +320,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_apply.add_argument("-o", "--output", default=None)
     p_apply.add_argument("--timecode", choices=("processed_at", "photo", "fixed", "none"), default=None)
     p_apply.add_argument("--at", default=None, help="processed_at の時刻を固定する（例: 2026-11-03T14:30）")
+    p_apply.add_argument("--bg-opacity", type=float, default=None, help="座布団の不透明度 0.0-1.0（文字の白飛び・黒飛び防止）")
     p_apply.add_argument("--json", action="store_true")
     p_apply.add_argument("--dry-run", action="store_true")
     p_apply.add_argument("--overwrite", action="store_true")
@@ -327,6 +332,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_batch.add_argument("--preset", default="favorite")
     p_batch.add_argument("--timecode", choices=("processed_at", "photo", "fixed", "none"), default=None)
     p_batch.add_argument("--at", default=None)
+    p_batch.add_argument("--bg-opacity", type=float, default=None, help="座布団の不透明度 0.0-1.0（文字の白飛び・黒飛び防止）")
     p_batch.add_argument("--timecode-per-file", action="store_true")
     p_batch.add_argument("--json", action="store_true")
     p_batch.set_defaults(func=cmd_batch)

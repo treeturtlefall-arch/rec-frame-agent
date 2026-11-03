@@ -47,3 +47,9 @@ def test_set_favorite_roundtrip(capsys, sample_image):
     assert code == 0 and data["favorite"] == "classic-black"
     code, data = _run(capsys, ["apply", str(sample_image), "--json"])
     assert code == 0 and data["preset_resolved"] == "classic-black"
+
+
+def test_apply_bg_opacity_json(sample_image, capsys):
+    code, data = _run(capsys, ["apply", str(sample_image), "--bg-opacity", "0.2", "--json"])
+    assert code == 0 and data["ok"] is True
+    assert data["bg_box_opacity"] == 0.2

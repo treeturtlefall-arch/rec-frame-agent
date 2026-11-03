@@ -10,5 +10,6 @@
   "show_timecode": true,
   "font_key": "Audiowide(ワイドHUD)",
   "retro_effect": 0,
+  "bg_box_opacity": 0.10,
   "timecode_mode": "processed_at"
 }

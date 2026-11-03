@@ -88,3 +88,37 @@ def test_batch_shares_one_timestamp(tmp_path):
     assert report["success"] == 2 and report["failed"] == 0
     assert report["timecode"]["text"] == "2026/11/03 AM 09:15"
     assert len(report["outputs"]) == 2
+
+
+def test_apply_with_bg_opacity(sample_image):
+    report = apply(str(sample_image), bg_opacity=0.25)
+    assert report["bg_box_opacity"] == 0.25
+
+
+def test_apply_invalid_bg_opacity(sample_image):
+    with pytest.raises(AgentError) as e1:
+        apply(str(sample_image), bg_opacity=1.5)
+    assert e1.value.exit_code == 2
+    with pytest.raises(AgentError) as e2:
+        apply(str(sample_image), bg_opacity=-0.1)
+    assert e2.value.exit_code == 2
+
+
+def test_bg_box_auto_inversion(tmp_path):
+    # 白飛び背景: 白背景に白文字 + 黒半透明座布団
+    white_img_path = tmp_path / "white.png"
+    Image.new("RGB", (640, 360), (255, 255, 255)).save(white_img_path)
+    r_white = apply(str(white_img_path), preset_name="ai-photo-white", bg_opacity=0.30)
+    out_white = Image.open(r_white["output"]).convert("RGB")
+    p_white = out_white.getpixel((590, 30))
+    # 純白(255)から座布団により暗くなっていること
+    assert p_white[0] < 240 and p_white[1] < 240 and p_white[2] < 240
+
+    # 黒飛び背景: 黒背景に黒文字 + 白半透明座布団
+    black_img_path = tmp_path / "black.png"
+    Image.new("RGB", (640, 360), (0, 0, 0)).save(black_img_path)
+    r_black = apply(str(black_img_path), preset_name="classic-black", bg_opacity=0.30)
+    out_black = Image.open(r_black["output"]).convert("RGB")
+    p_black = out_black.getpixel((590, 30))
+    # 真っ黒(0)から座布団により明るくなっていること
+    assert p_black[0] > 15 and p_black[1] > 15 and p_black[2] > 15

@@ -31,3 +31,10 @@ def test_capabilities_include_agent_fonts():
     axes = build_capabilities()["axes"]
     assert any("DSEG14" in n for n in axes["font"]["agent_bundled"])
     assert any("Audiowide" in n for n in axes["font"]["agent_bundled"])
+
+
+def test_capabilities_human_summary():
+    from rec_frame_agent.capabilities import human_summary
+    caps = build_capabilities()
+    summary = human_summary(caps)
+    assert "座布団" in summary

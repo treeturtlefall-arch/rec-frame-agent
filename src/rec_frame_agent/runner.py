@@ -67,12 +67,20 @@ def build_final_config(
     started_at: datetime,
     input_path: Path | None = None,
     base_image: Any | None = None,
+    bg_opacity_override: float | None = None,
 ) -> tuple[object, dict]:
     """プリセット → 本家 OverlayConfig と、報告用タイムコード情報。
 
     `processed_at` は本家に無い概念のため、ここで本家の書式に整形して
     `timecode_text` へ注入する（DESIGN.md §7.4）。エンジンは改変しない。
     """
+    if bg_opacity_override is not None:
+        if not (0.0 <= bg_opacity_override <= 1.0):
+            raise AgentError(
+                "invalid_bg_opacity", EXIT_USAGE,
+                f"座布団の不透明度は 0.0〜1.0 の範囲で指定してください: {bg_opacity_override}",
+            )
+
     mode = timecode_override or resolved.timecode_mode
     if mode not in ("processed_at", "photo", "fixed", "none"):
         raise AgentError("invalid_timecode_mode", EXIT_USAGE, f"不明な timecode_mode: {mode}")
@@ -84,6 +92,9 @@ def build_final_config(
         cfg = rec_config.OverlayConfig.from_dict(inject_agent_font(resolved.config_dict()))
     except (ValueError, TypeError) as e:
         raise AgentError("invalid_preset", EXIT_USAGE, f"プリセットの設定が不正です: {e}")
+
+    if bg_opacity_override is not None:
+        cfg = replace(cfg, bg_box_opacity=float(bg_opacity_override))
 
     if mode == "processed_at":
         dt = at or started_at
@@ -148,6 +159,7 @@ def apply(
     output: str | None = None,
     timecode: str | None = None,
     at_text: str | None = None,
+    bg_opacity: float | None = None,
     dry_run: bool = False,
     overwrite: bool = False,
     started_at: datetime | None = None,
@@ -171,6 +183,7 @@ def apply(
         started_at=started,
         input_path=input_path,
         base_image=img,
+        bg_opacity_override=bg_opacity,
     )
 
     report = {
@@ -180,6 +193,7 @@ def apply(
         "preset": preset_name,
         "preset_resolved": resolved.resolved_name,
         "preset_file": str(resolved.path),
+        "bg_box_opacity": getattr(cfg, "bg_box_opacity", 0.0),
         "width": width,
         "height": height,
         "timecode": tc_info,
@@ -203,6 +217,7 @@ def batch(
     preset_name: str = "favorite",
     timecode: str | None = None,
     at_text: str | None = None,
+    bg_opacity: float | None = None,
     timecode_per_file: bool = False,
     started_at: datetime | None = None,
 ) -> tuple[dict, int]:
@@ -213,7 +228,8 @@ def batch(
         raise AgentError("input_not_found", EXIT_INPUT, f"入力フォルダが見つかりません: {src_dir}")
     resolved = resolve_preset(preset_name)
     cfg, tc_info = build_final_config(
-        resolved, timecode_override=timecode, at=at, started_at=started
+        resolved, timecode_override=timecode, at=at, started_at=started,
+        bg_opacity_override=bg_opacity,
     )
     # バッチの processed_at は既定で全体同一時刻（build_final_config が
     # 固定文へ落とし込むため、そのまま process_folder で共有される）。
@@ -230,6 +246,7 @@ def batch(
                 cfg_i, _ = build_final_config(
                     resolved, timecode_override=timecode, at=at,
                     started_at=datetime.now().astimezone(),
+                    bg_opacity_override=bg_opacity,
                 )
                 dest = rec_batch.resolve_output_path(dst_dir, src)
                 rec_batch.process_single_file(src, dest, cfg_i)
@@ -254,6 +271,7 @@ def batch(
         "preset": preset_name,
         "preset_resolved": resolved.resolved_name,
         "preset_file": str(resolved.path),
+        "bg_box_opacity": getattr(cfg, "bg_box_opacity", 0.0),
         "success": result.success,
         "failed": result.failed,
         "skipped": result.skipped,
