@@ -14,7 +14,12 @@ ENGINE_FILES = ["rec_overlay.py", "rec_config.py", "rec_i18n.py", "rec_batch.py"
 
 
 def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    if not path.is_file():
+        return ""
+    data = path.read_bytes()
+    if path.suffix == ".py":
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 def main() -> int:

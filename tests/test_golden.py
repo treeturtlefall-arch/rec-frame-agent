@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
 from PIL import Image
 
-from rec_frame_agent.engine import ENGINE_DIR, load as load_engine
+from rec_frame_agent.engine import ENGINE_DIR, engine_file_sha256, load as load_engine
 from rec_frame_agent.presets import resolve_preset
 from rec_frame_agent.runner import apply
 
@@ -21,7 +20,7 @@ def test_engine_files_unmodified():
     )
     assert manifest
     for name, want in manifest.items():
-        got = hashlib.sha256((ENGINE_DIR / name).read_bytes()).hexdigest()
+        got = engine_file_sha256(ENGINE_DIR / name)
         assert got == want, name
 
 

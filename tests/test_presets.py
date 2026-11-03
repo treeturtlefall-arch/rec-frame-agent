@@ -45,7 +45,7 @@ def test_not_found_has_candidates():
 
 def test_user_preset_wins_over_bundled(isolated_user_config):
     d = user_presets_dir()
-    d.mkdir(parents=True)
+    d.mkdir(parents=True, exist_ok=True)
     (d / "ai-photo-white.json").write_text(
         json.dumps({"color": "black", "timecode_mode": "none"}), encoding="utf-8"
     )
@@ -61,5 +61,5 @@ def test_bundled_copies_in_sync():
         top = REPO_ROOT / "presets" / f"{name}.json"
         pkg = data / "presets" / f"{name}.json"
         if top.is_file() and pkg.is_file():
-            assert top.read_bytes() == pkg.read_bytes(), name
-    assert (REPO_ROOT / "favorites.json").read_bytes() == (data / "favorites.json").read_bytes()
+            assert json.loads(top.read_text(encoding="utf-8")) == json.loads(pkg.read_text(encoding="utf-8")), name
+    assert json.loads((REPO_ROOT / "favorites.json").read_text(encoding="utf-8")) == json.loads((data / "favorites.json").read_text(encoding="utf-8"))

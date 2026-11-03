@@ -6,6 +6,8 @@
 """
 from __future__ import annotations
 
+import functools
+import hashlib
 import sys
 from pathlib import Path
 
@@ -20,6 +22,7 @@ def ensure_path() -> Path:
     return ENGINE_DIR
 
 
+@functools.lru_cache(maxsize=1)
 def load():
     """(rec_config, rec_overlay, rec_batch) を返す。"""
     ensure_path()
@@ -28,3 +31,15 @@ def load():
     import rec_overlay
 
     return rec_config, rec_overlay, rec_batch
+
+
+def engine_file_sha256(path: Path) -> str:
+    """エンジン同梱ファイルの SHA-256 を計算する。
+    テキストファイル (.py) の場合は CRLF/LF の差分を排除して正規化する。
+    """
+    if not path.is_file():
+        return "missing"
+    data = path.read_bytes()
+    if path.suffix == ".py":
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()

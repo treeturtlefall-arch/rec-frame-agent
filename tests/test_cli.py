@@ -4,7 +4,7 @@ import json
 
 from rec_frame_agent.agentfonts import AGENT_FONTS, list_agent_fonts
 from rec_frame_agent.capabilities import build_capabilities
-from rec_frame_agent.presets import create_preset
+from rec_frame_agent.presets import create_preset, user_presets_dir
 from rec_frame_agent.runner import apply
 
 
@@ -22,9 +22,7 @@ def test_apply_with_agent_font(sample_image, isolated_user_config):
     create_preset("seg14", {"font_key": name})
     report = apply(str(sample_image), preset_name="seg14")
     assert report["ok"] is True
-    saved = json.loads(
-        (isolated_user_config / "xdg" / "rec-frame-agent" / "presets" / "seg14.json").read_text()
-    )
+    saved = json.loads((user_presets_dir() / "seg14.json").read_text(encoding="utf-8"))
     assert saved["font_key"] == name
     assert str(isolated_user_config) not in json.dumps(saved)  # 絶対パスを持たない
 

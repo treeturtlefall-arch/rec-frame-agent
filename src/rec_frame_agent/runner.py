@@ -6,6 +6,7 @@ import json
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from . import __version__
 from .engine import load as load_engine
@@ -65,6 +66,7 @@ def build_final_config(
     at: datetime | None,
     started_at: datetime,
     input_path: Path | None = None,
+    base_image: Any | None = None,
 ) -> tuple[object, dict]:
     """プリセット → 本家 OverlayConfig と、報告用タイムコード情報。
 
@@ -96,7 +98,12 @@ def build_final_config(
     elif mode == "photo":
         cfg = replace(cfg, show_timecode=True, timecode_from_exif=True)
         text = None
-        if input_path is not None:
+        if base_image is not None and input_path is not None:
+            try:
+                text = rec_overlay.photo_timecode_text(base_image, input_path, cfg.timecode_text)
+            except Exception:
+                text = None
+        elif input_path is not None:
             try:
                 img = rec_overlay.load_base_image(input_path)
                 text = rec_overlay.photo_timecode_text(img, input_path, cfg.timecode_text)
@@ -149,16 +156,23 @@ def apply(
     at = parse_at(at_text) if at_text else None
     input_path = Path(input_file).expanduser()
     _validate_input(input_path)
-    resolved = resolve_preset(preset_name)
-    cfg, tc_info = build_final_config(
-        resolved, timecode_override=timecode, at=at, started_at=started, input_path=input_path
-    )
     dest = _decide_output(input_path, output, overwrite)
     try:
         img = rec_overlay.load_base_image(input_path)
         width, height = img.size
     except Exception as e:
         raise AgentError("processing_failed", EXIT_ENGINE, f"画像を読めませんでした: {e}")
+
+    resolved = resolve_preset(preset_name)
+    cfg, tc_info = build_final_config(
+        resolved,
+        timecode_override=timecode,
+        at=at,
+        started_at=started,
+        input_path=input_path,
+        base_image=img,
+    )
+
     report = {
         "ok": True,
         "input": str(input_path),

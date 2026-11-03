@@ -61,7 +61,7 @@ def build_capabilities() -> dict:
             "thickness": {
                 "label": "枠の太さ",
                 "choices": ["small", "medium", "large"],
-                "range": "0–100 の数値でも指定可（四隅枠のみ連動）",
+                "range": "0-100 の数値でも指定可（四隅枠のみ連動）",
             },
             "toggles": {
                 "label": "要素の ON/OFF",
@@ -97,8 +97,8 @@ def human_summary(caps: dict) -> str:
         f"- 色: {' / '.join(axes['color']['presets'])}（＋任意の HEX）",
         f"- フォント: エンジン同梱 {len(axes['font']['bundled'])} 種＋エージェント同梱 {len(axes['font']['agent_bundled'])} 種＋OS フォント {len(axes['font']['os'])} 種",
         "- ON/OFF: " + "、".join(t["label"] for t in axes["toggles"]["items"]),
-        f"- 電池バー 0–4 本、ドット素材 {len(axes['dot_style']['choices'])} 種",
-        "- エフェクト: off / oled / 2000s、レトロ劣化 0–6",
+        f"- 電池バー 0-4 本、ドット素材 {len(axes['dot_style']['choices'])} 種",
+        "- エフェクト: off / oled / 2000s、レトロ劣化 0-6",
         "- タイムスタンプ: 処理した時刻 / 撮影日時 / 固定文 / なし",
         "",
         "気に入った組み合わせはプリセットとして保存でき、お気に入りにできます。",

@@ -26,6 +26,9 @@ FAVORITE_WORDS = ("favorite", "お気に入り", "いつもの")
 
 
 def user_config_dir() -> Path:
+    override = os.environ.get("REC_FRAME_AGENT_CONFIG_DIR")
+    if override:
+        return Path(override)
     if os.name == "nt":
         base = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
     else:
@@ -78,7 +81,7 @@ def preset_candidates() -> list[str]:
 
 def load_favorites() -> dict:
     """有効な favorites 定義。ユーザー側があればそれを正とし、無ければ同梱。"""
-    for path in (user_favorites_file(), REPO_FAVORITES, DATA_DIR / "favorites.json"):
+    for path in (user_favorites_file(), DATA_DIR / "favorites.json", REPO_FAVORITES):
         if path.is_file():
             data = _read_json(path)
             return {
@@ -153,7 +156,9 @@ RESERVED_NAMES = set(FAVORITE_WORDS) | {"favorite"}
 def set_user_favorite(name: str) -> Path:
     """ユーザー側 favorites.json にお気に入りを書く（既存の別名は保持）。"""
     fav = load_favorites()
-    data = {"favorite": name, "aliases": fav.get("aliases") or {}}
+    # FAVORITE_WORDS（お気に入り、いつもの等）はコード側で動的解決するため aliases から整理
+    clean_aliases = {k: v for k, v in (fav.get("aliases") or {}).items() if k not in FAVORITE_WORDS}
+    data = {"favorite": name, "aliases": clean_aliases}
     dest = user_favorites_file()
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

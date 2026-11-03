@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .engine import ENGINE_DIR, load as load_engine
+from .engine import ENGINE_DIR, engine_file_sha256, load as load_engine
 from .errors import EXIT_ENGINE, EXIT_OK, EXIT_USAGE, AgentError
 from .presets import (
     create_preset,
@@ -262,7 +262,7 @@ def cmd_doctor(args) -> int:
     mismatched = []
     for name, want in hashes.items():
         p = ENGINE_DIR / name
-        got = hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else "missing"
+        got = engine_file_sha256(p)
         if got != want:
             mismatched.append(name)
     checks.append({
@@ -381,6 +381,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+    if hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     parser = build_parser()
     args = parser.parse_args(argv)
     return args.func(args)

@@ -9,6 +9,7 @@
 """
 from __future__ import annotations
 
+import base64
 import json
 import os
 import sys
@@ -21,6 +22,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from PIL import Image, ImageDraw  # noqa: E402
 
+from rec_frame_agent.agentfonts import AGENT_FONTS, inject as inject_agent_font  # noqa: E402
 from rec_frame_agent.engine import load as load_engine  # noqa: E402
 
 rec_config, rec_overlay, rec_batch = load_engine()
@@ -100,8 +102,6 @@ def variations(base_raw: dict) -> list[dict]:
 
 
 def build_cfg(base_raw: dict, var: dict):
-    from rec_frame_agent.agentfonts import inject as inject_agent_font
-
     merged = {k: v for k, v in base_raw.items() if k != "timecode_mode"}
     merged.update(var["overrides"])
     cfg = rec_config.OverlayConfig.from_dict(inject_agent_font(merged))
@@ -153,41 +153,36 @@ function show(k){document.querySelector('.base-bright').style.display=k=='bright
 </script></body></html>"""
 
 
+def _render_sections(items: list[dict], labels: dict[str, str], out_dir: Path, embed: bool) -> str:
+    by: dict[str, list] = {}
+    for it in items:
+        by.setdefault(it["section"], []).append(it)
+    parts = []
+    for sec, label in labels.items():
+        if sec not in by:
+            continue
+        cards = []
+        for it in by[sec]:
+            if embed:
+                uri = "data:image/jpeg;base64," + base64.b64encode(
+                    (out_dir / it["file"]).read_bytes()
+                ).decode()
+            else:
+                uri = it["file"]
+            cards.append(
+                f'<figure><img loading="lazy" src="{uri}" alt="{it["label"]}">'
+                f'<figcaption>{it["label"]}<code>{it["machine"]}</code></figcaption></figure>'
+            )
+        parts.append(f'<section><h2>{label}</h2><div class="grid">{"".join(cards)}</div></section>')
+    return "".join(parts)
+
+
 def build_pages(out_dir: Path, manifest: dict) -> None:
-    """index.html（相対参照版）と gallery.html（画像埋め込みの自己完結版）を出す。
-
-    チャット等で単一ファイルとして開く場合は相対参照が解決されないため、
-    納品は自己完結版を使う。
-    """
-    import base64
-
-    def render(base: dict, embed: bool) -> str:
-        by: dict[str, list] = {}
-        for it in base["items"]:
-            by.setdefault(it["section"], []).append(it)
-        parts = []
-        for sec, label in SECTION_LABELS.items():
-            if sec not in by:
-                continue
-            cards = []
-            for it in by[sec]:
-                if embed:
-                    uri = "data:image/jpeg;base64," + base64.b64encode(
-                        (out_dir / it["file"]).read_bytes()
-                    ).decode()
-                else:
-                    uri = it["file"]
-                cards.append(
-                    f'<figure><img loading="lazy" src="{uri}" alt="{it["label"]}">'
-                    f'<figcaption>{it["label"]}<code>{it["machine"]}</code></figcaption></figure>'
-                )
-            parts.append(f'<section><h2>{label}</h2><div class="grid">{"".join(cards)}</div></section>')
-        return "".join(parts)
-
+    """index.html（相対参照版）と gallery.html（画像埋め込みの自己完結版）を出す。"""
     head = _PAGE_HEAD.replace("__FIXED__", manifest["fixed_timecode_text"])
     for filename, embed in (("index.html", False), ("gallery.html", True)):
         body = "".join(
-            f'<div class="base-{b["kind"]}">{render(b, embed)}</div>'
+            f'<div class="base-{b["kind"]}">{_render_sections(b["items"], SECTION_LABELS, out_dir, embed)}</div>'
             for b in manifest["bases"]
         )
         (out_dir / filename).write_text(head + body + _PAGE_TAIL, encoding="utf-8")
@@ -209,8 +204,6 @@ def decision_variations() -> list[dict]:
         out.append({"section": section, "label": label, "machine": machine,
                     "overrides": overrides or {}, "timecode_mode": mode})
 
-    from rec_frame_agent.agentfonts import AGENT_FONTS
-
     fonts = [f for f in rec_config.BUNDLED_FONT_CHOICES if not f.startswith("DSEG7")]
     fonts += list(AGENT_FONTS)
     for font in fonts:
@@ -226,31 +219,6 @@ def decision_variations() -> list[dict]:
 
 def build_decision_page(out_dir: Path, items_by_base: dict[str, list[dict]]) -> None:
     """決定用ギャラリーの自己完結ページ（decision.html）を出す。"""
-    import base64
-
-    def render(base_kind: str, embed: bool) -> str:
-        by: dict[str, list] = {}
-        for it in items_by_base[base_kind]:
-            by.setdefault(it["section"], []).append(it)
-        parts = []
-        for sec, label in DECISION_SECTION_LABELS.items():
-            if sec not in by:
-                continue
-            cards = []
-            for it in by[sec]:
-                if embed:
-                    uri = "data:image/jpeg;base64," + base64.b64encode(
-                        (out_dir / it["file"]).read_bytes()
-                    ).decode()
-                else:
-                    uri = it["file"]
-                cards.append(
-                    f'<figure><img loading="lazy" src="{uri}" alt="{it["label"]}">'
-                    f'<figcaption>{it["label"]}<code>{it["machine"]}</code></figcaption></figure>'
-                )
-            parts.append(f'<section><h2>{label}</h2><div class="grid">{"".join(cards)}</div></section>')
-        return "".join(parts)
-
     os_fonts = "".join(
         f'<li>{name} <code>--font \'{name}\'</code></li>' for name in rec_config.FONT_CHOICES
     )
@@ -270,10 +238,18 @@ def build_decision_page(out_dir: Path, items_by_base: dict[str, list[dict]]) -> 
         f"<ul>{os_fonts}</ul></section>"
     )
     body = "".join(
-        f'<div class="base-{kind}">{render(kind, True)}{note if kind == "bright" else ""}</div>'
+        f'<div class="base-{kind}">{_render_sections(items_by_base[kind], DECISION_SECTION_LABELS, out_dir, True)}{note if kind == "bright" else ""}</div>'
         for kind in ("bright", "dark")
     )
     (out_dir / "decision.html").write_text(head + body + _PAGE_TAIL, encoding="utf-8")
+
+
+def _render_item_image(src_path: Path, dest_path: Path, cfg) -> None:
+    """メモリ上で直接合成して JPEG 保存（一時 PNG ファイルの書き出し・再読込を省く）。"""
+    base_img = rec_overlay.load_base_image(src_path)
+    # composite_with_config は RGB または RGBA の Image を返す
+    out_img = rec_overlay.composite_with_config(base_img, cfg)
+    out_img.convert("RGB").save(dest_path, format="JPEG", quality=82)
 
 
 def main() -> int:
@@ -291,10 +267,7 @@ def main() -> int:
             dest_dir = out_dir / kind / var["section"]
             dest_dir.mkdir(parents=True, exist_ok=True)
             dest = dest_dir / f"{i:02d}_{slug(var['machine'])}.jpg"
-            rec_batch.process_single_file(src, dest.with_suffix(".png"), cfg)
-            # サムネイル用に JPEG 化して軽くする
-            Image.open(dest.with_suffix(".png")).convert("RGB").save(dest, quality=82)
-            dest.with_suffix(".png").unlink()
+            _render_item_image(src, dest, cfg)
             items.append({
                 "section": var["section"], "label": var["label"], "machine": var["machine"],
                 "file": str(dest.relative_to(out_dir)),
@@ -315,9 +288,7 @@ def main() -> int:
             dest_dir = out_dir / "decision" / kind / var["section"]
             dest_dir.mkdir(parents=True, exist_ok=True)
             dest = dest_dir / f"{i:02d}_{slug(var['machine'])}.jpg"
-            rec_batch.process_single_file(src, dest.with_suffix(".png"), cfg)
-            Image.open(dest.with_suffix(".png")).convert("RGB").save(dest, quality=82)
-            dest.with_suffix(".png").unlink()
+            _render_item_image(src, dest, cfg)
             items.append({**var, "file": str(dest.relative_to(out_dir))})
         decision_items[kind] = items
     build_decision_page(out_dir, decision_items)

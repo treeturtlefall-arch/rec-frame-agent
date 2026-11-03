@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11"
 
 [[package]]
@@ -163,9 +163,17 @@ test = [
     { name = "pytest" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "pillow", specifier = "==12.1.0" },
     { name = "pytest", marker = "extra == 'test'" },
 ]
 provides-extras = ["test"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest" }]
