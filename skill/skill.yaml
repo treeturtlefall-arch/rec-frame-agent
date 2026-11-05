@@ -1,0 +1,5 @@
+name: "rec_frame_agent"
+title: "Rec Frame Agent"
+description: "Composite a camera viewfinder overlay (corner frame, battery, red REC dot, timestamp) onto an image; use when asked to add a REC frame or a viewfinder look."
+category: "Work and knowledge"
+include_in_prompt: true
