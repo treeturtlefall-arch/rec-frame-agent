@@ -140,7 +140,11 @@ uv tool install .        # または pip install .
 
 ### Step 2. Muse スキルの配置
 ```bash
+# Linux / macOS
 bash scripts/install_skill.sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -File scripts\install_skill.ps1
 ```
 > [!NOTE]
 > スキル定義が `~/workspace/custom-skills/rec-frame-agent/SKILL.md` に配置され、エージェントが「お気に入りのフレームをつけて」「文字を見やすくして」などの自然言語トリガーを自律認識できるようになります。

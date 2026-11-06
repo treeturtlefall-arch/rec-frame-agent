@@ -141,7 +141,11 @@ uv tool install .        # or: pip install .
 
 ### Step 2. Deploy Muse Skill
 ```bash
+# Linux / macOS
 bash scripts/install_skill.sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -File scripts\install_skill.ps1
 ```
 > [!NOTE]
 > Deploys the skill definition to `~/workspace/custom-skills/rec-frame-agent/SKILL.md`, enabling the agent to recognize natural-language triggers like "Add my favorite frame" or "Fix washed-out text".
